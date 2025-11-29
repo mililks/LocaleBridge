@@ -1,4 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <iostream>
 #include <winsock2.h>
@@ -35,13 +36,16 @@ int main()
         WSACleanup();
         return 0;
     }
-    cout << "Soket created!" << endl;
 
-	string serverIP = FindServer();
-    if (serverIP.empty()) {
-		cout << "Server not found!" << endl;
-		return 0;
+	string serverIP;
+    cout << "Soket created!" << endl;
+    while (true) {
+        serverIP = FindServer();
+		if (!serverIP.empty()) {
+            break;
+        }
     }
+    cout << "Server Found"<< endl;
 
     sockaddr_in clientHint{};
     clientHint.sin_family = AF_INET;
