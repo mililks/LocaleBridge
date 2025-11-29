@@ -9,16 +9,21 @@
 #include<string>
 #include<map>
 #include<thread>
+#include<algorithm>
 
 #pragma comment(lib, "ws2_32.lib")
 
 using namespace std;
+
+const int TCP_PORT = 5000;
+const int UDP_PORT = 5001;
 
 vector<SOCKET> clientSockets;
 map<SOCKET, string> clientNames;
 mutex clientMutex;
 
 void ClientHandler(SOCKET clientSocket);
+void UdpDiscoveryThread();
 
 int main()
 {
@@ -60,6 +65,9 @@ int main()
         return 0;
     }
     cout << "Сервер прослуховує порт 5000. Очікування клієнтів..." << endl;
+
+    thread udpThread(UdpDiscoveryThread);
+    udpThread.detach();
 
     while (true) {
         sockaddr_in client{};
@@ -175,4 +183,53 @@ void ClientHandler(SOCKET clientSocket) {
     closesocket(clientSocket);
 
     cout << "'" << clientName << "' Клієнт відключився. З'єднання закрито." << endl;
+}
+
+void UdpDiscoveryThread() {
+    SOCKET udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (udpSocket == INVALID_SOCKET) {
+        cout << "UDP Помилка створення сокета." << endl;
+        return;
+    }
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(UDP_PORT);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(udpSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        cout << "UDP Помилка прив'язки." << endl;
+        closesocket(udpSocket);
+        return;
+    }
+    cout << "UDP прослуховує порт " << UDP_PORT << "." << endl;
+
+    char recvBuf[1024];
+    sockaddr_in clientAddr{};
+    int clientAddrSize = sizeof(clientAddr);
+
+    while (true) {
+        int bytesReceived = recvfrom(udpSocket, recvBuf, sizeof(recvBuf), 0, (sockaddr*)&clientAddr, &clientAddrSize);
+
+        if (bytesReceived == SOCKET_ERROR) {
+            if (WSAGetLastError() != 10004) {
+                cout << "UDP Помилка прийому." << endl;
+            }
+            break;
+        }
+
+        sockaddr_in localAddr;
+        int localAddrSize = sizeof(localAddr);
+        getsockname(udpSocket, (sockaddr*)&localAddr, &localAddrSize);
+        string serverIP = inet_ntoa(localAddr.sin_addr);
+
+        string response = serverIP + ":" + to_string(TCP_PORT);
+
+        sendto(udpSocket, response.c_str(), (int)response.length(), 0, (sockaddr*)&clientAddr, clientAddrSize);
+
+        string clientIP = inet_ntoa(clientAddr.sin_addr);
+        cout << "UDP запит від " << clientIP << ". Надіслано IP сервера: " << response << endl;
+    }
+
+    closesocket(udpSocket);
 }
