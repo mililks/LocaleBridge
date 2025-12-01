@@ -159,13 +159,9 @@ void ClientHandler(SOCKET clientSocket) {
         cout << ">> " << broadcastMessage << endl;
 
         clientMutex.lock();
-
         for (SOCKET otherSocket : clientSockets) {
-            if (otherSocket != clientSocket) {
-                send(otherSocket, broadcastMessage.c_str(), (int)broadcastMessage.length(), 0);
-            }
+            send(otherSocket, broadcastMessage.c_str(), (int)broadcastMessage.length(), 0);
         }
-
         clientMutex.unlock();
     }
 
