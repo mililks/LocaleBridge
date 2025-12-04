@@ -214,17 +214,12 @@ void UdpDiscoveryThread() {
             break;
         }
 
-        sockaddr_in localAddr;
-        int localAddrSize = sizeof(localAddr);
-        getsockname(udpSocket, (sockaddr*)&localAddr, &localAddrSize);
-        string serverIP = inet_ntoa(localAddr.sin_addr);
-
-        string response = serverIP + ":" + to_string(TCP_PORT);
+        string response = "OK:" + to_string(TCP_PORT);
 
         sendto(udpSocket, response.c_str(), (int)response.length(), 0, (sockaddr*)&clientAddr, clientAddrSize);
 
         string clientIP = inet_ntoa(clientAddr.sin_addr);
-        cout << "UDP запит від " << clientIP << ". Надіслано IP сервера: " << response << endl;
+        cout << "UDP Discovery: відповів клієнту " << clientIP << endl;
     }
 
     closesocket(udpSocket);
