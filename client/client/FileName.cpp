@@ -64,6 +64,7 @@ int main()
     string name;
     cout << "Enter your name: ";
     cin >> name;
+    cin.ignore();
     int sendName = send(clientSocket, name.c_str(), (int)name.size(), 0);
     if (sendName == SOCKET_ERROR) {
         cout << "Error.Conection failed." << endl;
