@@ -4,12 +4,12 @@
 #include <iostream>
 #include <windows.h>
 #include <winsock2.h>
-#include<vector>
-#include<mutex>
-#include<string>
-#include<map>
-#include<thread>
-#include<algorithm>
+#include <vector>
+#include <mutex>
+#include <string>
+#include <map>
+#include <thread>
+#include <algorithm>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -25,44 +25,44 @@ void ClientHandler(SOCKET clientSocket);
 
 int main()
 {
-    SetConsoleCP(1251);
-    SetConsoleOutputCP(1251);
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
 
     WSADATA wsaData{};
     const int startupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (startupResult != 0) {
-        cout << "Помилка ініціалізації Winsock!" << endl;
+        cout << "Error initializing Winsock!" << endl;
         return 0;
     }
-    cout << "Winsock успішно ініціалізовано." << endl;
+    cout << "Winsock initialized successfully." << endl;
 
     SOCKET listeningSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listeningSocket == INVALID_SOCKET) {
-        cout << "Помилка створення сокета!" << endl;
+        cout << "Error creating socket!" << endl;
         WSACleanup();
         return 0;
     }
-    cout << "Сокет успішно створено." << endl;
+    cout << "Socket created successfully." << endl;
 
     sockaddr_in serverHint{};
     serverHint.sin_family = AF_INET;
-    serverHint.sin_port = htons(5000);
+    serverHint.sin_port = htons(TCP_PORT);
     serverHint.sin_addr.S_un.S_addr = INADDR_ANY;
     if (bind(listeningSocket, (sockaddr*)&serverHint, sizeof(serverHint)) == SOCKET_ERROR) {
-        cout << "Помилка прив'язки сокета до стурктури." << endl;
+        cout << "Error binding socket to address." << endl;
         closesocket(listeningSocket);
         WSACleanup();
         return 0;
     }
-    cout << "Прив'язка сокета до структури успішна!" << endl;
+    cout << "Socket bound to address successfully!" << endl;
 
     if (listen(listeningSocket, SOMAXCONN) == SOCKET_ERROR) {
-        cout << "Помилка прослуховування!" << endl;
+        cout << "Error listening on socket!" << endl;
         closesocket(listeningSocket);
         WSACleanup();
         return 0;
     }
-    cout << "Сервер прослуховує порт 5000. Очікування клієнтів..." << endl;
+    cout << "Server is listening on port 5000. Waiting for clients..." << endl;
 
     while (true) {
         sockaddr_in client{};
@@ -70,22 +70,21 @@ int main()
         SOCKET clientSocket = accept(listeningSocket, (sockaddr*)&client, &clientSize);
 
         if (clientSocket == INVALID_SOCKET) {
-            cout << "Помилка прийняття з'єднання." << endl;
+            cout << "Error accepting connection." << endl;
             continue;
         }
 
         clientMutex.lock();
         clientSockets.push_back(clientSocket);
         clientMutex.unlock();
-           
+
         thread clientThread(ClientHandler, clientSocket);
         clientThread.detach();
-        
     }
 
     const int cleanupResult = WSACleanup();
     if (cleanupResult != 0) {
-        cout << "Помилка очищення ресурсів!" << endl;
+        cout << "Error cleaning up resources!" << endl;
     }
 
     return 0;
@@ -103,9 +102,9 @@ void ClientHandler(SOCKET clientSocket) {
         clientIP = inet_ntoa(client_addr.sin_addr);
     }
     else {
-        clientIP = "Невідома IP-адреса";
+        clientIP = "Unknown IP address";
     }
-    cout << "Новий клієнт '" << clientIP << "' підключився. Очікування імені..." << endl;
+    cout << "New client '" << clientIP << "' connected. Waiting for name..." << endl;
 
     fflush(stdout);
 
@@ -129,14 +128,14 @@ void ClientHandler(SOCKET clientSocket) {
         clientName = nameCandidate;
         clientMutex.unlock();
 
-        cout << "'" << clientIP << "' зареєстрований як '" << clientName << "'." << endl;
+        cout << "'" << clientIP << "' registered as '" << clientName << "'." << endl;
     }
     else {
         clientMutex.lock();
         clientSockets.erase(remove(clientSockets.begin(), clientSockets.end(), clientSocket), clientSockets.end());
         clientMutex.unlock();
         closesocket(clientSocket);
-        cout << "'" << clientIP << "' Клієнт відключився до надсилання імені." << endl;
+        cout << "'" << clientIP << "' Client disconnected before sending name." << endl;
         return;
     }
 
@@ -173,5 +172,5 @@ void ClientHandler(SOCKET clientSocket) {
     clientMutex.unlock();
     closesocket(clientSocket);
 
-    cout << "'" << clientName << "' Клієнт відключився. З'єднання закрито." << endl;
+    cout << "'" << clientName << "' Client disconnected. Connection closed." << endl;
 }
