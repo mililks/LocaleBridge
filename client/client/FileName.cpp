@@ -14,8 +14,6 @@ using namespace std;
 
 void ReceiveHandler(SOCKET clientSocket);
 
-string FindServer();
-
 int main()
 {
 
@@ -37,20 +35,11 @@ int main()
         return 0;
     }
 
-	string serverIP;
-    cout << "Soket created!" << endl;
-    while (true) {
-        serverIP = FindServer();
-		if (!serverIP.empty()) {
-            break;
-        }
-    }
-    cout << "Server Found"<< endl;
-
+	
     sockaddr_in clientHint{};
     clientHint.sin_family = AF_INET;
     clientHint.sin_port = htons(5000);
-    clientHint.sin_addr.S_un.S_addr = inet_addr(serverIP.c_str());
+    clientHint.sin_addr.S_un.S_addr = inet_addr("10.57.90.236");
 
     startupResult = connect(clientSocket, (sockaddr*)&clientHint, sizeof(clientHint));
     if (startupResult == SOCKET_ERROR) {
@@ -100,51 +89,6 @@ int main()
     WSACleanup();
 
     return 0;
-}
-
-string FindServer() {
-    cout << "Searching for server..." << endl;
-
-    SOCKET FindSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-    char broadcast = '1';
-    if (setsockopt(FindSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) < 0) {
-        closesocket(FindSocket);
-        return "";
-    }
-
-    int timeout = 2000;
-    setsockopt(FindSocket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
-
-    sockaddr_in BroadcstFind{};
-    BroadcstFind.sin_family = AF_INET;
-    BroadcstFind.sin_port = htons(5001);
-    BroadcstFind.sin_addr.s_addr = INADDR_BROADCAST;
-
-    string msg = "WHO_IS_SERVER";
-    int sendResult = sendto(FindSocket, msg.c_str(), msg.size() + 1, 0, (sockaddr*)&BroadcstFind, sizeof(BroadcstFind));
-
-    if (sendResult == SOCKET_ERROR) {
-        cout << "Cant send." << endl;
-        closesocket(FindSocket);
-        return "";
-    }
-
-    char buf[1024];
-    sockaddr_in serverAddrFromResponse{};
-    int serverAddrLen = sizeof(serverAddrFromResponse);
-
-    int bytesIn = recvfrom(FindSocket, buf, 1024, 0, (sockaddr*)&serverAddrFromResponse, &serverAddrLen);
-
-    string serverIP = inet_ntoa(serverAddrFromResponse.sin_addr);
-    if (bytesIn == SOCKET_ERROR) {
-        cout << "No response from server." << endl;
-        closesocket(FindSocket);
-        return "";
-    }
-    closesocket(FindSocket);
-    return serverIP;
-
 }
 
 void ReceiveHandler(SOCKET clientSocket) {
