@@ -35,11 +35,14 @@ int main()
         return 0;
     }
 
+    string ipAddress;
+    cout << "Enter server IP address: ";
+    cin >> ipAddress;
 	
     sockaddr_in clientHint{};
     clientHint.sin_family = AF_INET;
     clientHint.sin_port = htons(5000);
-    clientHint.sin_addr.S_un.S_addr = inet_addr("10.57.90.236");
+    clientHint.sin_addr.S_un.S_addr = inet_addr(ipAddress.c_str());
 
     startupResult = connect(clientSocket, (sockaddr*)&clientHint, sizeof(clientHint));
     if (startupResult == SOCKET_ERROR) {
